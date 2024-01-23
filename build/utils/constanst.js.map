@@ -1,0 +1,1 @@
+{"version":3,"file":"constanst.js","sourceRoot":"","sources":["../../src/utils/constanst.ts"],"names":[],"mappings":";;;AAEa,QAAA,aAAa,GAAkB;IAC1C,OAAO,EAAE,IAAI,IAAI,CAAC,IAAI,CAAC,GAAG,EAAE,GAAG,EAAE,GAAG,EAAE,GAAG,EAAE,GAAG,IAAI,CAAC;IACnD,MAAM,EAAE,IAAI;IACZ,QAAQ,EAAE,IAAI;IACd,QAAQ,EAAE,MAAM;CACjB,CAAC"}

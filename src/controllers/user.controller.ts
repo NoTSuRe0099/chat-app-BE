@@ -1,0 +1,198 @@
+import { Request, Response } from 'express';
+import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
+import { cookieOptions } from '../utils/constanst';
+import UserModel from '../models/user.model';
+
+class UserController {
+  private userModel: typeof UserModel;
+
+  constructor() {
+    this.userModel = UserModel;
+    this.register = this.register.bind(this);
+    this.login = this.login.bind(this);
+    this.getUserDetails = this.getUserDetails.bind(this);
+    this.logout = this.logout.bind(this);
+    this.getAllUsers = this.getAllUsers.bind(this);
+  }
+
+  async register(req: Request, res: Response): Promise<Response> {
+    try {
+      const { name, email, password } = req?.body;
+
+      if (!name || !email || !password) {
+        return res.status(500).json({
+          data: null,
+          success: false,
+          message: 'Please enter name, email & password',
+        });
+      }
+
+      const exists = await this.userModel.findOne({ email });
+
+      if (exists) {
+        return res.status(500).json({
+          data: null,
+          success: false,
+          message: 'Email already exists',
+        });
+      }
+
+      const newUser = new this.userModel({
+        name,
+        email,
+        password: bcrypt.hashSync(password, 10),
+      });
+
+      await newUser.save();
+
+      const accessToken = jwt.sign(
+        { id: newUser._id },
+        process.env.JWT_SECRET || '',
+        {
+          expiresIn: '1d',
+        }
+      );
+
+      return res
+        .status(201)
+        .cookie('access_token', accessToken, cookieOptions)
+        .json({
+          data: null,
+          success: true,
+          message: 'Registration Successful.',
+        });
+    } catch (error) {
+      console.error('error', error);
+      return res.status(500).json({
+        data: null,
+        success: false,
+        message: 'Something went wrong',
+        error,
+      });
+    }
+  }
+
+  async login(req: Request, res: Response): Promise<Response> {
+    try {
+      const { email, password } = req?.body;
+
+      if (!email || !password) {
+        return res.status(500).json({
+          data: null,
+          success: false,
+          message: 'Please enter email & password',
+        });
+      }
+
+      const user = await this.userModel.findOne({ email }).select('password');
+
+      if (!user) {
+        return res.status(500).json({
+          data: null,
+          success: false,
+          message: 'Email or password is wrong',
+        });
+      }
+
+      const isMatch: boolean = await bcrypt.compare(
+        password,
+        user?.password || ''
+      );
+
+      if (!isMatch) {
+        return res.status(500).json({
+          data: null,
+          success: true,
+          message: 'Email or password is wrong',
+        });
+      }
+
+      const accessToken = jwt.sign(
+        { id: user._id },
+        process.env.JWT_SECRET || '',
+        {
+          expiresIn: '1d',
+        }
+      );
+
+      return res
+        .status(200)
+        .cookie('access_token', accessToken, cookieOptions)
+        .json({
+          data: null,
+          success: true,
+          message: 'Logged in Successfully',
+        });
+    } catch (error) {
+      console.error('error', error);
+      return res.status(500).json({
+        data: null,
+        success: false,
+        message: 'Something went wrong',
+        error,
+      });
+    }
+  }
+
+  async getUserDetails(req: Request, res: Response): Promise<Response> {
+    try {
+      const { userId } = req;
+      const user = await this.userModel.findById(userId);
+
+      return res.status(200).json({
+        data: user,
+        success: true,
+        message: '',
+      });
+    } catch (error) {
+      return res.status(500).json({
+        data: null,
+        success: false,
+        message: 'Something went wrong',
+        error,
+      });
+    }
+  }
+
+  async getAllUsers(req: Request, res: Response): Promise<Response> {
+    try {
+      const users = await this.userModel
+        .find({ _id: { $ne: req?.userId } })
+        .select('-email -createdAt -updatedAt -__v');
+
+      return res.status(200).json({
+        data: users,
+        success: true,
+        message: '',
+      });
+    } catch (error) {
+      console.error('qweq', error);
+      return res.status(500).json({
+        data: null,
+        success: false,
+        message: 'Something went wrong',
+        error,
+      });
+    }
+  }
+
+  async logout(req: Request, res: Response): Promise<Response> {
+    try {
+      return res.status(200).cookie('access_token', null, cookieOptions).json({
+        data: null,
+        success: true,
+        message: 'Logged out Successfully',
+      });
+    } catch (error) {
+      return res.status(500).json({
+        data: null,
+        success: false,
+        message: 'Something went wrong',
+        error,
+      });
+    }
+  }
+}
+
+export default UserController;
