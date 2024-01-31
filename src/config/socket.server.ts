@@ -57,8 +57,6 @@ class SocketService {
         const { receiverId, message, sentAt } = data;
         const receiverSocketId = (await this.getUserSocketId(receiverId)) || '';
 
-        console.log('receiverSocketId', receiverSocketId);
-
         if (receiverSocketId) {
           this.io.to(receiverSocketId).emit('RECEIVE_MESSAGE', {
             senderId: userId,
@@ -68,6 +66,10 @@ class SocketService {
           });
         }
       });
+
+      socket.on('JOIN_GROUP', async (data) => this.joinGroup(socket, data));
+
+      socket.on('SEND_GROUP_MESSAGE', this.sendGroupMessage);
 
       socket.on('disconnect', async () => {
         userId && (await this.setUserOffline(userId));
@@ -118,6 +120,26 @@ class SocketService {
     const onlineUsers = await this.getOnlineUsers();
     console.log('onlineUsers', onlineUsers);
     this.io.emit('UPDATED_ONLINE_USERS', onlineUsers);
+  };
+
+  private joinGroup = async (
+    socket: ExtendedSocket,
+    data: any
+  ): Promise<void> => {
+    const { groupId } = data;
+
+    await socket.join(groupId);
+  };
+
+  private sendGroupMessage = async (data: {
+    groupId: string;
+    message: string;
+    from: string;
+  }): Promise<void> => {
+    const { groupId, message, from } = data;
+    this.io
+      .to(groupId)
+      .emit('RECIEVE_GROUP_MESSAGE', { message: message, from: from });
   };
 }
 

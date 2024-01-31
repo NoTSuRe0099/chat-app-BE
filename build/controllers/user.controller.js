@@ -133,7 +133,7 @@ class UserController {
         try {
             const users = await this.userModel
                 .find({ _id: { $ne: req === null || req === void 0 ? void 0 : req.userId } })
-                .select('-createdAt -updatedAt -__v');
+                .select('-email -createdAt -updatedAt -__v');
             return res.status(200).json({
                 data: users,
                 success: true,

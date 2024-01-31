@@ -9,14 +9,9 @@ class UserController {
 
   constructor() {
     this.userModel = UserModel;
-    this.register = this.register.bind(this);
-    this.login = this.login.bind(this);
-    this.getUserDetails = this.getUserDetails.bind(this);
-    this.logout = this.logout.bind(this);
-    this.getAllUsers = this.getAllUsers.bind(this);
   }
 
-  async register(req: Request, res: Response): Promise<Response> {
+  register = async (req: Request, res: Response): Promise<Response> => {
     try {
       const { name, email, password } = req?.body;
 
@@ -71,9 +66,9 @@ class UserController {
         error,
       });
     }
-  }
+  };
 
-  async login(req: Request, res: Response): Promise<Response> {
+  login = async (req: Request, res: Response): Promise<Response> => {
     try {
       const { email, password } = req?.body;
 
@@ -133,9 +128,9 @@ class UserController {
         error,
       });
     }
-  }
+  };
 
-  async getUserDetails(req: Request, res: Response): Promise<Response> {
+  getUserDetails = async (req: Request, res: Response): Promise<Response> => {
     try {
       const { userId } = req;
       const user = await this.userModel.findById(userId);
@@ -153,9 +148,9 @@ class UserController {
         error,
       });
     }
-  }
+  };
 
-  async getAllUsers(req: Request, res: Response): Promise<Response> {
+  getAllUsers = async (req: Request, res: Response): Promise<Response> => {
     try {
       const users = await this.userModel
         .find({ _id: { $ne: req?.userId } })
@@ -175,9 +170,9 @@ class UserController {
         error,
       });
     }
-  }
+  };
 
-  async logout(req: Request, res: Response): Promise<Response> {
+  logout = async (req: Request, res: Response): Promise<Response> => {
     try {
       return res.status(200).cookie('access_token', null, cookieOptions).json({
         data: null,
@@ -192,7 +187,7 @@ class UserController {
         error,
       });
     }
-  }
+  };
 }
 
 export default UserController;

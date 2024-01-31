@@ -8,6 +8,7 @@ import SocketService from './config/socket.server';
 import connectDB from './config/mongoDB.service';
 import './config/redis.service';
 import AuthRoutes from './routes/user.routes';
+import ChatRoutes from './routes/chat.routes';
 
 dotenv.config();
 
@@ -37,6 +38,7 @@ app.get('/', (req: Request, res: Response) => {
 
 // Routes
 app.use('/auth', AuthRoutes);
+app.use('/chat', ChatRoutes);
 
 // VAPID keys for Web Push notifications
 const vapidKeys = {
