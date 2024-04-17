@@ -53,10 +53,10 @@ class SocketService {
 
       this.emitOnlineUsers();
 
-      socket.on('SEND_MESSAGE', async (data) => {
+      socket.on('SEND_MESSAGE', async (data: any) => {
         const { receiverId, message, sentAt } = data;
         const receiverSocketId = (await this.getUserSocketId(receiverId)) || '';
-
+        console.log('single user message recived', data)
         if (receiverSocketId) {
           this.io.to(receiverSocketId).emit('RECEIVE_MESSAGE', {
             senderId: userId,
@@ -133,13 +133,17 @@ class SocketService {
 
   private sendGroupMessage = async (data: {
     groupId: string;
-    message: string;
-    from: string;
+    payload: {
+      senderId: string;
+      message: string;
+      sentAt: Date | string;
+    };
   }): Promise<void> => {
-    const { groupId, message, from } = data;
-    this.io
-      .to(groupId)
-      .emit('RECIEVE_GROUP_MESSAGE', { message: message, from: from });
+    const { groupId, payload } = data;
+    this.io.to(groupId).emit('RECIEVE_GROUP_MESSAGE', {
+      groupId: groupId,
+      ...payload,
+    });
   };
 }
 

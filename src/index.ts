@@ -20,7 +20,11 @@ app.use(express.json());
 // Middleware
 app.use(
   cors({
-    origin: ['http://localhost:4000', 'http://192.168.203.107:4000'],
+    origin: [
+      'http://localhost:4000',
+      'http://192.168.203.107:4000',
+      process.env.FRONTEND_URL as string,
+    ],
     credentials: true,
   })
 );

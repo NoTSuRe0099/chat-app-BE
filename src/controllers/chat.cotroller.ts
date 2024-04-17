@@ -34,7 +34,7 @@ class ChatController {
     }
   };
 
-  getMyChatgroups = async (req: Request, res: Response): Promise<Response> => {
+  setMyChatgroups = async (req: Request, res: Response): Promise<Response> => {
     try {
       const { userId } = req;
 

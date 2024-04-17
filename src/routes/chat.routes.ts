@@ -6,6 +6,6 @@ const router: Router = Router();
 const chatController: ChatController = new ChatController();
 
 router.post('/createNewChatGroup', isAuthenticated, chatController.createGroup);
-router.get('/getMyChatgroups', isAuthenticated, chatController.getMyChatgroups);
+router.get('/setMyChatgroups', isAuthenticated, chatController.setMyChatgroups);
 
 export default router;
