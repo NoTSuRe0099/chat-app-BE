@@ -7,7 +7,7 @@ const isAuthenticated = (req: Request, res: Response, next: NextFunction) => {
       req?.cookies?.['access_token'] || null;
 
     if (!access_token) {
-      return res.status(401).json({ message: 'No token provided' });
+      return res.status(401).json({ cause: 'No token provided' });
     }
 
     const decoded: any = jwt.verify(access_token, process.env.JWT_SECRET || '');
@@ -18,9 +18,9 @@ const isAuthenticated = (req: Request, res: Response, next: NextFunction) => {
     console.log('auth middleware err:', error.name, error.message);
 
     if (error instanceof TokenExpiredError) {
-      return res.status(401).json({ message: 'Token expired' });
+      return res.status(401).json({ message: 'Login expired' });
     } else if (error instanceof JsonWebTokenError) {
-      return res.status(401).json({ message: 'Invalid token' });
+      return res.status(401).json({ message: 'Invalid Login' });
     }
 
     return res.status(401).json({ message: 'Something went wrong' });

@@ -9,18 +9,40 @@ interface ExtendedSocket extends socketIO.Socket {
 }
 
 class SocketService {
+  private static instance: SocketService;
   private io: Server;
-  private redisClient: RedisClientType;
+  private static redisClient: RedisClientType;
 
-  constructor(server: any) {
+  private constructor(server: any) {
     this.io = new Server(server, {
       cors: {
         origin: '*',
         methods: ['GET', 'POST'],
       },
     });
+    SocketService.redisClient = redisClient; // Use static redisClient
     this.initializeSocketEvents();
-    this.redisClient = redisClient;
+  }
+
+  public static initialize(server: any): void {
+    if (!SocketService.instance) {
+      SocketService.instance = new SocketService(server);
+    }
+  }
+
+  public static getInstance(): SocketService {
+    if (!SocketService.instance) {
+      throw new Error(
+        'SocketService is not initialized. Call initialize(server) first.'
+      );
+    }
+    return SocketService.instance;
+  }
+
+  public static async getUserSocketId(userId: string): Promise<string | null> {
+    const data: string | null =
+      (await SocketService.redisClient.hGet('userSocketMap', userId)) || '';
+    return data;
   }
 
   private async initializeSocketEvents(): Promise<void> {
@@ -41,7 +63,6 @@ class SocketService {
           }
 
           await this.setUserOnline(decoded?.id, socket?.id);
-          // If authenticated, add user data to socket
           socket.userId = decoded?.id;
           next();
         }
@@ -55,8 +76,10 @@ class SocketService {
 
       socket.on('SEND_MESSAGE', async (data: any) => {
         const { receiverId, message, sentAt } = data;
-        const receiverSocketId = (await this.getUserSocketId(receiverId)) || '';
-        console.log('single user message recived', data)
+        const receiverSocketId = await SocketService.getUserSocketId(
+          receiverId
+        );
+
         if (receiverSocketId) {
           this.io.to(receiverSocketId).emit('RECEIVE_MESSAGE', {
             senderId: userId,
@@ -86,18 +109,8 @@ class SocketService {
     return this.io;
   };
 
-  public static initialize(server: any): SocketService {
-    return new SocketService(server);
-  }
-
-  private getUserSocketId = async (userId: string): Promise<string | null> => {
-    const data: string | null =
-      (await this.redisClient.hGet('userSocketMap', userId)) || '';
-    return data;
-  };
-
   private getOnlineUsers = async (): Promise<string[]> => {
-    const onlineUsers: string[] = await this.redisClient.sMembers(
+    const onlineUsers: string[] = await SocketService.redisClient.sMembers(
       'onlineUsers'
     );
     return onlineUsers;
@@ -107,13 +120,13 @@ class SocketService {
     userId: string,
     socketId: string
   ): Promise<void> => {
-    await this.redisClient.sAdd('onlineUsers', userId);
-    await this.redisClient.hSet('userSocketMap', userId, socketId);
+    await SocketService.redisClient.sAdd('onlineUsers', userId);
+    await SocketService.redisClient.hSet('userSocketMap', userId, socketId);
   };
 
   private setUserOffline = async (userId: string): Promise<void> => {
-    await this.redisClient.sRem('onlineUsers', userId);
-    await this.redisClient.hDel('userSocketMap', userId);
+    await SocketService.redisClient.sRem('onlineUsers', userId);
+    await SocketService.redisClient.hDel('userSocketMap', userId);
   };
 
   private emitOnlineUsers = async (): Promise<void> => {
@@ -127,7 +140,6 @@ class SocketService {
     data: any
   ): Promise<void> => {
     const { groupId } = data;
-
     await socket.join(groupId);
   };
 
@@ -135,6 +147,7 @@ class SocketService {
     groupId: string;
     payload: {
       senderId: string;
+      senderName: string;
       message: string;
       sentAt: Date | string;
     };

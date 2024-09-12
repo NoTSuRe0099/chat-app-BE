@@ -21,9 +21,9 @@ app.use(express.json());
 app.use(
   cors({
     origin: [
-      'http://localhost:4000',
-      'http://192.168.203.107:4000',
       process.env.FRONTEND_URL as string,
+      'http://localhost:7274',
+      'http://localhost:4000',
     ],
     credentials: true,
   })
