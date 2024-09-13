@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import * as socketIO from 'socket.io';
 import { Server } from 'socket.io';
 import { redisClient } from './redis.service';
+import ChatModel, { ChatTypeEnum } from '../models/Chat/chat.model';
 
 interface ExtendedSocket extends socketIO.Socket {
   userId?: string;
@@ -12,6 +13,7 @@ class SocketService {
   private static instance: SocketService;
   private io: Server;
   private static redisClient: RedisClientType;
+  private chatModel: typeof ChatModel;
 
   private constructor(server: any) {
     this.io = new Server(server, {
@@ -22,6 +24,7 @@ class SocketService {
     });
     SocketService.redisClient = redisClient; // Use static redisClient
     this.initializeSocketEvents();
+    this.chatModel = ChatModel;
   }
 
   public static initialize(server: any): void {
@@ -81,6 +84,13 @@ class SocketService {
         );
 
         if (receiverSocketId) {
+          await this.chatModel.create({
+            senderId: userId,
+            receiverId: receiverId,
+            message,
+            type: ChatTypeEnum.USER,
+          });
+
           this.io.to(receiverSocketId).emit('RECEIVE_MESSAGE', {
             senderId: userId,
             receiverId: receiverId,
@@ -93,6 +103,8 @@ class SocketService {
       socket.on('JOIN_GROUP', async (data) => this.joinGroup(socket, data));
 
       socket.on('SEND_GROUP_MESSAGE', this.sendGroupMessage);
+
+      socket.on('USER_TYPING', this.isUserTypingTrigger);
 
       socket.on('disconnect', async () => {
         userId && (await this.setUserOffline(userId));
@@ -153,10 +165,26 @@ class SocketService {
     };
   }): Promise<void> => {
     const { groupId, payload } = data;
+    await this.chatModel.create({
+      senderId: payload?.senderId,
+      message: payload?.message,
+      groupId: groupId,
+      type: ChatTypeEnum.GROUP,
+    });
     this.io.to(groupId).emit('RECIEVE_GROUP_MESSAGE', {
       groupId: groupId,
       ...payload,
     });
+  };
+
+  private isUserTypingTrigger = async (data: {
+    senderId: string;
+    receiverId: string;
+    isTyping: boolean;
+  }): Promise<void> => {
+    const { receiverId } = data;
+    const receiverSocketId = await SocketService.getUserSocketId(receiverId);
+    this.io.to(receiverSocketId as string).emit('IS_USER_TYPING', data);
   };
 }
 

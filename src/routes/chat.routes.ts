@@ -26,4 +26,6 @@ router.get(
   chatController.getGroupChatUserForInvite
 );
 
+router.get('/loadChats', isAuthenticated, chatController.fetchChats);
+
 export default router;

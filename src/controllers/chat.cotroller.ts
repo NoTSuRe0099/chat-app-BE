@@ -4,16 +4,19 @@ import GroupChatInvtSchemaModel from '../models/groupChatInvt.model';
 import UserModel from '../models/user.model';
 import mongoose from 'mongoose';
 import SocketService from '../config/socket.server';
+import ChatModel, { ChatTypeEnum } from '../models/Chat/chat.model';
 
 class ChatController {
   private groupChatModel: typeof GroupChatModel;
   private groupChatInvtSchemaModel: typeof GroupChatInvtSchemaModel;
   private userModel: typeof UserModel;
+  private chatModel: typeof ChatModel;
 
   constructor() {
     this.groupChatModel = GroupChatModel;
     this.groupChatInvtSchemaModel = GroupChatInvtSchemaModel;
     this.userModel = UserModel;
+    this.chatModel = ChatModel;
   }
 
   createGroup = async (req: Request, res: Response): Promise<Response> => {
@@ -365,6 +368,86 @@ class ChatController {
         data: null,
         success: false,
         message: 'Something went wrong',
+        error,
+      });
+    }
+  };
+
+  fetchChats = async (req: Request, res: Response): Promise<Response> => {
+    try {
+      const { type, receiverId = '', groupId } = req.query; // type = 'user' or 'group'
+      const { page = 1, limit = 10 } = req.query;
+      const userId = req.userId; // Authenticated user ID
+      const skip = (Number(page) - 1) * Number(limit);
+
+      if (
+        !type ||
+        (type !== ChatTypeEnum.USER && type !== ChatTypeEnum.GROUP)
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Invalid 'type' parameter. It should be either 'user' or 'group'.",
+        });
+      }
+
+      let query: any = {};
+
+      // Determine the query based on chat type
+      if (type === ChatTypeEnum.USER && receiverId) {
+        query = {
+          type: ChatTypeEnum.USER,
+          $or: [
+            {
+              senderId: userId,
+              receiverId: new mongoose.Types.ObjectId(receiverId as string),
+            },
+            {
+              senderId: new mongoose.Types.ObjectId(receiverId as string),
+              receiverId: userId,
+            },
+          ],
+        };
+      } else if (type === ChatTypeEnum.GROUP && groupId) {
+        query = {
+          type: ChatTypeEnum.GROUP,
+          groupId: new mongoose.Types.ObjectId(groupId as string),
+        };
+      } else {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Please provide valid 'receiverId' for user chat or 'groupId' for group chat.",
+        });
+      }
+
+      // Fetch chats based on the query
+      const chats = await this.chatModel
+        .find(query)
+        .sort({ sentAt: 'desc' }) // Sort by latest messages
+        .skip(skip)
+        .limit(Number(limit));
+
+      // Count total number of messages
+      const total = await this.chatModel.countDocuments(query);
+
+      return res.status(200).json({
+        success: true,
+        data: {
+          chats: chats.reverse(),
+          pagination: {
+            total,
+            page: Number(page),
+            limit: Number(limit),
+            totalPages: Math.ceil(total / Number(limit)),
+          },
+        },
+      });
+    } catch (error) {
+      console.error('Error fetching chats:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Error fetching chats',
         error,
       });
     }
