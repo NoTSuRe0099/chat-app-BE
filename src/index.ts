@@ -6,7 +6,7 @@ import dotenv from 'dotenv';
 import cookieParser from 'cookie-parser';
 import SocketService from './config/socket.server';
 import connectDB from './config/mongoDB.service';
-import './config/redis.service';
+import connectRedis from './config/redis.service';
 import AuthRoutes from './routes/user.routes';
 import ChatRoutes from './routes/chat.routes';
 
@@ -29,8 +29,9 @@ app.use(
   })
 );
 app.use(cookieParser());
-
+const REDIS_URL = process.env.REDIS_CLIENT_URL as string;
 connectDB();
+connectRedis(REDIS_URL);
 
 // Sample route for testing
 app.get('/', (req: Request, res: Response) => {

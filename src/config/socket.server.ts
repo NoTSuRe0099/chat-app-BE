@@ -187,8 +187,15 @@ class SocketService {
     isTyping: boolean;
   }): Promise<void> => {
     const { receiverId } = data;
+
     const receiverSocketId = await SocketService.getUserSocketId(receiverId);
-    this.io.to(receiverSocketId as string).emit('IS_USER_TYPING', data);
+    if (receiverSocketId) {
+      console.log('oiiii', data, receiverSocketId);
+
+      this.io
+        .to(receiverSocketId as string)
+        .emit('IS_USER_TYPING', { ...data });
+    }
   };
 }
 
