@@ -399,12 +399,12 @@ class ChatController {
           type: ChatTypeEnum.USER,
           $or: [
             {
-              senderId: userId,
+              senderId: new mongoose.Types.ObjectId(userId as string),
               receiverId: new mongoose.Types.ObjectId(receiverId as string),
             },
             {
               senderId: new mongoose.Types.ObjectId(receiverId as string),
-              receiverId: userId,
+              receiverId: new mongoose.Types.ObjectId(userId as string),
             },
           ],
         };
@@ -424,7 +424,7 @@ class ChatController {
       // Fetch chats based on the query
       const chats = await this.chatModel
         .find(query)
-        .sort({ sentAt: 'desc' }) // Sort by latest messages
+        .sort({ sentAt: -1 }) // Sort by latest messages
         .skip(skip)
         .limit(Number(limit));
 

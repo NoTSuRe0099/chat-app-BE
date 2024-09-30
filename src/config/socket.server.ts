@@ -73,17 +73,17 @@ class SocketService {
     });
 
     this.io.on('connection', async (socket: ExtendedSocket) => {
-      const { userId } = socket;
+      try {
+        const { userId } = socket;
 
-      this.emitOnlineUsers();
+        this.emitOnlineUsers();
 
-      socket.on('SEND_MESSAGE', async (data: any) => {
-        const { receiverId, message, sentAt } = data;
-        const receiverSocketId = await SocketService.getUserSocketId(
-          receiverId
-        );
+        socket.on('SEND_MESSAGE', async (data: any) => {
+          const { receiverId, message, sentAt } = data;
+          const receiverSocketId = await SocketService.getUserSocketId(
+            receiverId
+          );
 
-        if (receiverSocketId) {
           await this.chatModel.create({
             senderId: userId,
             receiverId: receiverId,
@@ -91,26 +91,30 @@ class SocketService {
             type: ChatTypeEnum.USER,
           });
 
-          this.io.to(receiverSocketId).emit('RECEIVE_MESSAGE', {
-            senderId: userId,
-            receiverId: receiverId,
-            message,
-            sentAt,
-          });
-        }
-      });
+          if (receiverSocketId) {
+            this.io.to(receiverSocketId).emit('RECEIVE_MESSAGE', {
+              senderId: userId,
+              receiverId: receiverId,
+              message,
+              sentAt,
+            });
+          }
+        });
 
-      socket.on('JOIN_GROUP', async (data) => this.joinGroup(socket, data));
+        socket.on('JOIN_GROUP', async (data) => this.joinGroup(socket, data));
 
-      socket.on('SEND_GROUP_MESSAGE', this.sendGroupMessage);
+        socket.on('SEND_GROUP_MESSAGE', this.sendGroupMessage);
 
-      socket.on('USER_TYPING', this.isUserTypingTrigger);
+        socket.on('USER_TYPING', this.isUserTypingTrigger);
 
-      socket.on('disconnect', async () => {
-        userId && (await this.setUserOffline(userId));
-        console.log('User disconnected');
-        this.emitOnlineUsers();
-      });
+        socket.on('disconnect', async () => {
+          userId && (await this.setUserOffline(userId));
+          console.log('User disconnected');
+          this.emitOnlineUsers();
+        });
+      } catch (error) {
+        console.log('socket Errors', error);
+      }
     });
   }
 
