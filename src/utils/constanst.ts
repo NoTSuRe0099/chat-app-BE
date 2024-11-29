@@ -5,5 +5,8 @@ export const cookieOptions: CookieOptions = {
   secure: process.env.NODE_ENV === 'production' ? true : false,
   httpOnly: process.env.NODE_ENV === 'production' ? true : false,
   sameSite: 'lax',
-  // domain: '192.168.203.107', // Use the custom domain for testing
+  domain:
+    process.env.NODE_ENV === 'production'
+      ? (process.env.FRONTEND_URL as string)
+      : '', // Use the custom domain for testing
 };
