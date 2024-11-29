@@ -44,7 +44,7 @@ class SocketService {
 
   public static async getUserSocketId(userId: string): Promise<string | null> {
     const data: string | null =
-      (await SocketService.redisClient.hGet('userSocketMap', userId)) || '';
+      (await SocketService?.redisClient?.hGet('userSocketMap', userId)) || '';
     return data;
   }
 
@@ -187,14 +187,15 @@ class SocketService {
     isTyping: boolean;
   }): Promise<void> => {
     const { receiverId } = data;
+    if (receiverId) {
+      const receiverSocketId = await SocketService?.getUserSocketId(receiverId);
+      if (receiverSocketId) {
+        console.log('oiiii', data, receiverSocketId);
 
-    const receiverSocketId = await SocketService.getUserSocketId(receiverId);
-    if (receiverSocketId) {
-      console.log('oiiii', data, receiverSocketId);
-
-      this.io
-        .to(receiverSocketId as string)
-        .emit('IS_USER_TYPING', { ...data });
+        this.io
+          .to(receiverSocketId as string)
+          .emit('IS_USER_TYPING', { ...data });
+      }
     }
   };
 }
