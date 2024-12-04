@@ -41,7 +41,7 @@ class UserController {
 
       await newUser.save();
 
-      const accessToken = jwt.sign(
+      const access_token = jwt.sign(
         { id: newUser._id },
         process.env.JWT_SECRET || '',
         {
@@ -49,16 +49,12 @@ class UserController {
         }
       );
 
-      return res
-        .status(201)
-        .cookie('access_token', accessToken, cookieOptions)
-        .json({
-          data: null,
-          success: true,
-          message: 'Registration Successful.',
-        });
+      return res.status(201).json({
+        data: { access_token },
+        success: true,
+        message: 'Registration Successful.',
+      });
     } catch (error) {
-      console.error('error', error);
       return res.status(500).json({
         data: null,
         success: false,
@@ -103,7 +99,7 @@ class UserController {
         });
       }
 
-      const accessToken = jwt.sign(
+      const access_token = jwt.sign(
         { id: user._id },
         process.env.JWT_SECRET || '',
         {
@@ -111,16 +107,12 @@ class UserController {
         }
       );
 
-      return res
-        .status(200)
-        .cookie('access_token', accessToken, cookieOptions)
-        .json({
-          data: null,
-          success: true,
-          message: 'Logged in Successfully',
-        });
+      return res.status(200).json({
+        data: { access_token },
+        success: true,
+        message: 'Logged in Successfully',
+      });
     } catch (error) {
-      console.error('error', error);
       return res.status(500).json({
         data: null,
         success: false,
@@ -162,7 +154,6 @@ class UserController {
         message: '',
       });
     } catch (error) {
-      console.error('qweq', error);
       return res.status(500).json({
         data: null,
         success: false,
@@ -174,8 +165,10 @@ class UserController {
 
   logout = async (req: Request, res: Response): Promise<Response> => {
     try {
-      return res.status(200).cookie('access_token', null, cookieOptions).json({
-        data: null,
+      return res.status(200).json({
+        data: {
+          access_token: null,
+        },
         success: true,
         message: 'Logged out Successfully',
       });
