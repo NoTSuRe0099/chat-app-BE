@@ -50,8 +50,7 @@ class SocketService {
 
   private async initializeSocketEvents(): Promise<void> {
     this.io.use(async (socket: any, next: Function) => {
-      const cookie = socket?.handshake?.headers?.cookie;
-      const token = cookie ? cookie?.replace('access_token=', '') : null;
+      const token = socket?.handshake?.auth?.['access_token'] || '';
 
       if (!token) {
         return next(new Error('Unauthorized: No token provided'));
