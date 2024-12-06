@@ -4,7 +4,8 @@ import GroupChatInvtSchemaModel from '../models/groupChatInvt.model';
 import UserModel from '../models/user.model';
 import mongoose from 'mongoose';
 import SocketService from '../config/socket.server';
-import ChatModel, { ChatTypeEnum } from '../models/Chat/chat.model';
+import ChatModel from '../models/Chat/chat.model';
+import { ChatTypeEnum } from '../Enums';
 
 class ChatController {
   private groupChatModel: typeof GroupChatModel;

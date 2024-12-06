@@ -1,15 +1,13 @@
 import { Schema, Document, model, Types } from 'mongoose';
-
-export enum ChatTypeEnum {
-  USER = 'user',
-  GROUP = 'group',
-}
+import { ChatTypeEnum, MessageType } from '../../Enums';
 
 export interface IChat {
   type: ChatTypeEnum.USER | ChatTypeEnum.GROUP;
   senderId: Types.ObjectId;
   message: string;
   sentAt?: Date | string;
+  messageType: MessageType.TEXT | MessageType.MEDIA;
+  mediaUrl: string;
 }
 
 export interface IUserChat extends IChat {
@@ -39,8 +37,14 @@ const ChatSchema = new Schema(
     senderId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     receiverId: { type: Schema.Types.ObjectId, ref: 'User', required: false },
     groupId: { type: Schema.Types.ObjectId, ref: 'groupChat', required: false },
-    message: { type: String, required: true },
+    messageType: {
+      type: String,
+      enum: [MessageType.TEXT, MessageType.MEDIA],
+      required: true,
+    },
+    message: { type: String, required: false },
     sentAt: { type: Date, default: Date.now },
+    mediaUrl: { type: String, required: false },
   },
   {
     timestamps: true,

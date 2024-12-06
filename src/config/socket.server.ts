@@ -2,8 +2,9 @@ import { RedisClientType } from '@redis/client';
 import jwt from 'jsonwebtoken';
 import * as socketIO from 'socket.io';
 import { Server } from 'socket.io';
+import { ChatTypeEnum, EventTypes, MessageType } from '../Enums';
+import ChatModel from '../models/Chat/chat.model';
 import { redisClient } from './redis.service';
-import ChatModel, { ChatTypeEnum } from '../models/Chat/chat.model';
 
 interface ExtendedSocket extends socketIO.Socket {
   userId?: string;
@@ -74,11 +75,10 @@ class SocketService {
     this.io.on('connection', async (socket: ExtendedSocket) => {
       try {
         const { userId } = socket;
-
         this.emitOnlineUsers();
 
-        socket.on('SEND_MESSAGE', async (data: any) => {
-          const { receiverId, message, sentAt } = data;
+        socket.on(EventTypes.SEND_MESSAGE, async (data: any) => {
+          const { receiverId, message, sentAt, messageType, mediaUrl } = data;
           const receiverSocketId = await SocketService.getUserSocketId(
             receiverId
           );
@@ -88,23 +88,29 @@ class SocketService {
             receiverId: receiverId,
             message,
             type: ChatTypeEnum.USER,
+            messageType: messageType,
+            mediaUrl: mediaUrl,
           });
 
           if (receiverSocketId) {
-            this.io.to(receiverSocketId).emit('RECEIVE_MESSAGE', {
+            this.io.to(receiverSocketId).emit(EventTypes.RECEIVE_MESSAGE, {
               senderId: userId,
               receiverId: receiverId,
               message,
               sentAt,
+              messageType,
+              mediaUrl,
             });
           }
         });
 
-        socket.on('JOIN_GROUP', async (data) => this.joinGroup(socket, data));
+        socket.on(EventTypes.JOIN_GROUP, async (data) =>
+          this.joinGroup(socket, data)
+        );
 
-        socket.on('SEND_GROUP_MESSAGE', this.sendGroupMessage);
+        socket.on(EventTypes.SEND_GROUP_MESSAGE, this.sendGroupMessage);
 
-        socket.on('USER_TYPING', this.isUserTypingTrigger);
+        socket.on(EventTypes.USER_TYPING, this.isUserTypingTrigger);
 
         socket.on('disconnect', async () => {
           userId && (await this.setUserOffline(userId));
@@ -147,7 +153,7 @@ class SocketService {
   private emitOnlineUsers = async (): Promise<void> => {
     const onlineUsers = await this.getOnlineUsers();
     console.log('onlineUsers', onlineUsers);
-    this.io.emit('UPDATED_ONLINE_USERS', onlineUsers);
+    this.io.emit(EventTypes.UPDATED_ONLINE_USERS, onlineUsers);
   };
 
   private joinGroup = async (
@@ -165,16 +171,21 @@ class SocketService {
       senderName: string;
       message: string;
       sentAt: Date | string;
+      messageType: string;
+      mediaUrl: string;
     };
   }): Promise<void> => {
     const { groupId, payload } = data;
+    const { messageType, mediaUrl } = payload;
     await this.chatModel.create({
       senderId: payload?.senderId,
       message: payload?.message,
       groupId: groupId,
       type: ChatTypeEnum.GROUP,
+      messageType: messageType,
+      mediaUrl: mediaUrl,
     });
-    this.io.to(groupId).emit('RECIEVE_GROUP_MESSAGE', {
+    this.io.to(groupId).emit(EventTypes.RECEIVE_GROUP_MESSAGE, {
       groupId: groupId,
       ...payload,
     });
@@ -189,11 +200,9 @@ class SocketService {
     if (receiverId) {
       const receiverSocketId = await SocketService?.getUserSocketId(receiverId);
       if (receiverSocketId) {
-        console.log('oiiii', data, receiverSocketId);
-
         this.io
           .to(receiverSocketId as string)
-          .emit('IS_USER_TYPING', { ...data });
+          .emit(EventTypes.IS_USER_TYPING, { ...data });
       }
     }
   };
