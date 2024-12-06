@@ -422,7 +422,7 @@ class ChatController {
         });
       }
 
-      // Fetch chats based on the query
+      // Fetch chats based on the query and sort them in descending order
       const chats = await this.chatModel
         .find(query)
         .sort({ sentAt: -1 }) // Sort by latest messages
@@ -435,7 +435,7 @@ class ChatController {
       return res.status(200).json({
         success: true,
         data: {
-          chats: chats.reverse(),
+          chats: chats.reverse(), // The chats should already be sorted in descending order
           pagination: {
             total,
             page: Number(page),
