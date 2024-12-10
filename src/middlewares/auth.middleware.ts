@@ -4,7 +4,6 @@ import jwt, { TokenExpiredError, JsonWebTokenError } from 'jsonwebtoken';
 const isAuthenticated = (req: Request, res: Response, next: NextFunction) => {
   try {
     const access_token: string | undefined | null =
-      // @ts-ignore
       req?.headers?.authorization || '';
 
     if (!access_token) {
