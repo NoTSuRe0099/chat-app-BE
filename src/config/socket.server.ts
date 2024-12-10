@@ -195,8 +195,22 @@ class SocketService {
     senderId: string;
     receiverId: string;
     isTyping: boolean;
+    groupId: string;
+    groupUserList: string[];
   }): Promise<void> => {
-    const { receiverId } = data;
+    const { receiverId, groupId, groupUserList, senderId } = data;
+    if (groupId) {
+      for (const userId of groupUserList) {
+        if (userId !== senderId) {
+          const userSocketId = await SocketService?.getUserSocketId(userId);
+          if (userSocketId) {
+            this.io
+              .to(userSocketId as string)
+              .emit(EventTypes.IS_USER_TYPING, { ...data });
+          }
+        }
+      }
+    }
     if (receiverId) {
       const receiverSocketId = await SocketService?.getUserSocketId(receiverId);
       if (receiverSocketId) {
