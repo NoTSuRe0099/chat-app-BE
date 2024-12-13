@@ -5,6 +5,7 @@ import { Server } from 'socket.io';
 import { ChatTypeEnum, EventTypes, MessageType } from '../Enums';
 import ChatModel from '../models/Chat/chat.model';
 import { redisClient } from './redis.service';
+import mongoose from 'mongoose';
 
 interface ExtendedSocket extends socketIO.Socket {
   userId?: string;
@@ -111,6 +112,8 @@ class SocketService {
         socket.on(EventTypes.SEND_GROUP_MESSAGE, this.sendGroupMessage);
 
         socket.on(EventTypes.USER_TYPING, this.isUserTypingTrigger);
+
+        socket.on(EventTypes.DELETE_MESSAGE_IN, this.deleteMessage);
 
         socket.on('disconnect', async () => {
           userId && (await this.setUserOffline(userId));
@@ -221,6 +224,30 @@ class SocketService {
           .to(receiverSocketId as string)
           .emit(EventTypes.IS_USER_TYPING, { ...data });
       }
+    }
+  };
+
+  private deleteMessage = async (data: {
+    senderId: string;
+    receiverId: string;
+    groupId: string;
+    messageId: string;
+  }): Promise<void> => {
+    const { senderId, receiverId, groupId, messageId } = data;
+    await this.chatModel.findByIdAndDelete(
+      new mongoose.Types.ObjectId(messageId)
+    );
+
+    const receiverSocketId = await SocketService?.getUserSocketId(receiverId);
+    if (groupId || receiverSocketId) {
+      this.io
+        .to(groupId || (receiverSocketId as string))
+        .emit(EventTypes.DELETE_MESSAGE_OUT, {
+          senderId,
+          receiverId,
+          groupId,
+          messageId,
+        });
     }
   };
 }
